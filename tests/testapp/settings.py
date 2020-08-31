@@ -96,3 +96,5 @@ SHELL_PLUS_POST_IMPORTS = [
     'import os as test_os',
     'from django_extensions.utils import *',
 ]
+
+SILENCED_SYSTEM_CHECKS = ["models.W027"]
