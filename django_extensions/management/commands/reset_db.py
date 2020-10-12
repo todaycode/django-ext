@@ -119,7 +119,6 @@ Type 'yes' to continue, or 'no' to cancel: """ % (database_name,))
                 os.unlink(database_name)
             except OSError:
                 pass
-
         elif engine in MYSQL_ENGINES:
             import MySQLdb as Database
             kwargs = {
@@ -142,7 +141,6 @@ Type 'yes' to continue, or 'no' to cancel: """ % (database_name,))
             connection.query(drop_query)
             logging.info('Executing... "%s"', create_query)
             connection.query(create_query.strip())
-
         elif engine in POSTGRESQL_ENGINES:
             import psycopg2 as Database  # NOQA
 
@@ -191,7 +189,6 @@ Type 'yes' to continue, or 'no' to cancel: """ % (database_name,))
 
             logging.info('Executing... "%s"', create_query)
             cursor.execute(create_query)
-
         else:
             raise CommandError("Unknown database engine %s" % engine)
 

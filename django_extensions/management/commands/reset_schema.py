@@ -13,6 +13,7 @@ from django.db import connections
 from django.conf import settings
 from six.moves import input
 
+from django_extensions.settings import POSTGRESQL_ENGINES
 from django_extensions.utils.deprecation import RemovedInNextVersionWarning
 
 
@@ -51,8 +52,8 @@ class Command(BaseCommand):
         if dbinfo is None:
             raise CommandError("Unknown database %s" % database)
 
-        engine = dbinfo.get('ENGINE').split('.')[-1]
-        if engine not in ('postgresql', 'postgresql_psycopg2', 'postgis'):
+        engine = dbinfo.get('ENGINE')
+        if engine not in POSTGRESQL_ENGINES:
             raise CommandError('This command can be used only with PostgreSQL databases.')
 
         database_name = dbinfo['NAME']
@@ -73,6 +74,7 @@ Type 'yes' to continue, or 'no' to cancel: """.format(schema, database_name))
         if confirm != 'yes':
             print("Reset cancelled.")
             return
+
         with connections[database].cursor() as cursor:
             cursor.execute("DROP SCHEMA {} CASCADE".format(schema))
             cursor.execute("CREATE SCHEMA {}".format(schema))
