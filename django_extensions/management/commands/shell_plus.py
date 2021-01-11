@@ -3,6 +3,7 @@ import os
 import six
 import sys
 import traceback
+import warnings
 
 from django.db import connections
 from django.conf import settings
@@ -213,7 +214,7 @@ class Command(BaseCommand):
 
         return {'django_extensions': ks}
 
-    def run_notebookapp(self, app, options, use_kernel_specs=True):
+    def run_notebookapp(self, app_init, options, use_kernel_specs=True):
         no_browser = options['no_browser']
 
         if self.extra_args:
@@ -244,7 +245,12 @@ class Command(BaseCommand):
         if not use_kernel_specs:
             notebook_arguments.extend(ipython_arguments)
 
-        app.initialize(notebook_arguments)
+        if not callable(app_init):
+            app = app_init
+            warnings.warn('Initialize should be a callable not an app instance', DeprecationWarning)
+            app.initialize(notebook_arguments)
+        else:
+            app = app_init(notebook_arguments)
 
         # IPython >= 3 uses kernelspecs to specify kernel CLI args
         if use_kernel_specs:
@@ -294,10 +300,13 @@ class Command(BaseCommand):
 
         use_kernel_specs = release.version_info[0] >= 3
 
-        def run_notebook():
+        def app_init(*args, **kwargs):
             app = NotebookApp.instance()
-            self.run_notebookapp(app, options, use_kernel_specs)
+            app.initialize(*args, **kwargs)
+            return app
 
+        def run_notebook():
+            self.run_notebookapp(app_init, options, use_kernel_specs)
         return run_notebook
 
     def get_jupyterlab(self, options):
@@ -306,10 +315,22 @@ class Command(BaseCommand):
         except ImportError:
             return traceback.format_exc()
 
-        def run_jupyterlab():
-            app = LabApp.instance()
-            self.run_notebookapp(app, options)
+        # check for JupyterLab 3.0
+        try:
+            from notebook.notebookapp import NotebookApp
+        except ImportError:
+            NotebookApp = None
 
+        if not NotebookApp or not issubclass(LabApp, NotebookApp):
+            app_init = LabApp.initialize_server
+        else:
+            def app_init(*args, **kwargs):
+                app = LabApp.instance()
+                app.initialize(*args, **kwargs)
+                return app
+
+        def run_jupyterlab():
+            self.run_notebookapp(app_init, options)
         return run_jupyterlab
 
     def get_plain(self, options):
