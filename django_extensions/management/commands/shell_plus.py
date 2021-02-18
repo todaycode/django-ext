@@ -214,7 +214,7 @@ class Command(BaseCommand):
 
         return {'django_extensions': ks}
 
-    def run_notebookapp(self, app_init, options, use_kernel_specs=True):
+    def run_notebookapp(self, app_init, options, use_kernel_specs=True, history=True):
         no_browser = options['no_browser']
 
         if self.extra_args:
@@ -244,6 +244,10 @@ class Command(BaseCommand):
         # IPython < 3 passes through kernel args from notebook CLI
         if not use_kernel_specs:
             notebook_arguments.extend(ipython_arguments)
+
+        # disable history if not already configured in some other way
+        if not history and not any(arg.startswith('--HistoryManager') for arg in ipython_arguments):
+            ipython_arguments.append('--HistoryManager.enabled=False')
 
         if not callable(app_init):
             app = app_init
@@ -330,7 +334,7 @@ class Command(BaseCommand):
                 return app
 
         def run_jupyterlab():
-            self.run_notebookapp(app_init, options)
+            self.run_notebookapp(app_init, options, history=False)
         return run_jupyterlab
 
     def get_plain(self, options):
